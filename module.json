@@ -1,0 +1,48 @@
+{
+  "id": "pokerole-pokedex",
+  "title": "Poké Role - Pokédex",
+  "description": "Adds an animated Pokédex button to the left scene controls column. Click to inspect the targeted Pokémon: species portrait, type(s) and pokédex entry/biography.",
+  "version": "0.1.0",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13.351"
+  },
+  "relationships": {
+    "systems": [
+      {
+        "id": "pok-role-system",
+        "type": "system",
+        "compatibility": {
+          "minimum": "1.0.0"
+        }
+      }
+    ]
+  },
+  "authors": [
+    {
+      "name": "LinguardEvergreen",
+      "url": "https://github.com/LinguardEvergreen"
+    }
+  ],
+  "esmodules": [
+    "scripts/main.mjs"
+  ],
+  "styles": [
+    "styles/pokedex.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    },
+    {
+      "lang": "it",
+      "name": "Italiano",
+      "path": "lang/it.json"
+    }
+  ],
+  "url": "https://github.com/LinguardEvergreen/pokerole-pokedex",
+  "manifest": "https://github.com/LinguardEvergreen/pokerole-pokedex/releases/latest/download/module.json",
+  "download": "https://github.com/LinguardEvergreen/pokerole-pokedex/releases/latest/download/module.zip"
+}

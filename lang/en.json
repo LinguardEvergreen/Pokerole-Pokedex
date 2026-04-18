@@ -1,0 +1,9 @@
+{
+  "POKEDEX": {
+    "ButtonTooltip": "Open Pokédex (requires a targeted Pokémon)",
+    "NoTarget": "Target a Pokémon first (press T on a token) to open the Pokédex.",
+    "EntryLabel": "Pokédex Entry",
+    "NoEntry": "No pokédex entry recorded for this Pokémon.",
+    "Close": "Close"
+  }
+}

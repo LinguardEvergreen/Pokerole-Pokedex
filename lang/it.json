@@ -1,0 +1,9 @@
+{
+  "POKEDEX": {
+    "ButtonTooltip": "Apri Pokédex (richiede un Pokémon bersagliato)",
+    "NoTarget": "Bersaglia prima un Pokémon (premi T su un token) per aprire il Pokédex.",
+    "EntryLabel": "Voce del Pokédex",
+    "NoEntry": "Nessuna voce del pokédex registrata per questo Pokémon.",
+    "Close": "Chiudi"
+  }
+}
