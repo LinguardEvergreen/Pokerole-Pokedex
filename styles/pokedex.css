@@ -613,16 +613,29 @@
  *  Catalog Mode — right-shell list in Pokémon Sword/Shield style
  * ============================================================ */
 
+/* Cap the whole device so a ~1000-row list can't stretch the clamshell
+   past the viewport. Flex children also need `min-height: 0` along the
+   chain, otherwise their intrinsic min-size (auto → min-content) beats
+   the device's max-height and the list pushes everything tall again. */
+.pokedex-device.catalog-mode {
+  max-height: 88vh;
+}
+
+.pokedex-device.catalog-mode .pokedex-shell {
+  min-height: 0;
+}
+
 /* Right shell is wider in catalog mode so the list rows breathe */
 .pokedex-device.catalog-mode .pokedex-shell-right {
   width: 520px;
+  min-height: 0;
 }
 
 .catalog-info-screen {
   background: linear-gradient(180deg, #f9dbba 0%, #f3b17a 42%, #eb8f4f 100%);
   gap: 8px;
   padding: 12px 14px 10px;
-  min-height: 480px;
+  min-height: 0;
 }
 
 /* Header bar: title + Caught/Seen counters */
@@ -712,9 +725,12 @@
   font-weight: 700;
 }
 
-/* Scrollable list of species */
+/* Scrollable list of species — min-height:0 is required so the flex
+   parent can shrink below the intrinsic content size and let this
+   child actually scroll instead of ballooning its ancestors. */
 .catalog-list {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
