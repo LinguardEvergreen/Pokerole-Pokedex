@@ -1,4 +1,4 @@
-import { POKEMON_PACK_ID, speciesKey } from "./constants.mjs";
+import { POKEMON_PACK_ID, cleanBiography, speciesKey } from "./constants.mjs";
 
 /**
  * Lightweight catalog loader for the system's pokemon-actors compendium.
@@ -56,6 +56,14 @@ function _compareVariants(a, b) {
   const bb = _isBaseForm(b);
   if (ba && !bb) return -1;
   if (!ba && bb) return 1;
+  // Richer biography wins. Pok-Role ships placeholder entries (e.g. "Egg"
+  // at #001) whose biography is just the Corebook import tag with no real
+  // description, which collides with the real base species. Preferring the
+  // longer bio lets the real Pokémon outrank these stubs even when both
+  // pass the base-form check.
+  const bioA = (a.bioRaw ?? "").length;
+  const bioB = (b.bioRaw ?? "").length;
+  if (bioA !== bioB) return bioB - bioA;
   // Prefer the shorter name ("Exeggutor" before "Exeggutor-Alolan")
   if (a.name.length !== b.name.length) return a.name.length - b.name.length;
   return a.name.localeCompare(b.name);
@@ -94,9 +102,21 @@ export async function getSpeciesIndex() {
       key: speciesKey(e),
       img: e.img,
       pokedexNumber: _parsePokedexNumber(bio),
+      bioRaw: bio,
       primary: "normal",
       secondary: "none"
     };
+  }).filter((e) => {
+    // Pok-Role ships a stray "Egg" placeholder in the pokemon-actors
+    // compendium with biography = "Corebook Pokedex import #001." (nothing
+    // else). It parses as #001 and collides with Bulbasaur. Worse, its
+    // portrait path (`egg.png`) is mis-labelled in the system's assets and
+    // actually shows Alolan Exeggutor's sprite, so the catalog used to
+    // display a palm-tree creature at slot #001. Any entry whose biography
+    // is *only* the Corebook tag — i.e. cleaned bio is empty — is a
+    // non-species placeholder; drop it from the catalog.
+    const cleaned = cleanBiography(e.bioRaw);
+    return cleaned.length > 0;
   });
 
   // Group alternate forms (Mega, regional variants, Gigantamax, etc.) that
