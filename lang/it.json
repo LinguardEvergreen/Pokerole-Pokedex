@@ -12,6 +12,10 @@
     "LockedEntry": "Bloccato — scansiona prima questo Pokémon",
     "CaughtBadge": "Catturato",
     "EmptyCatalog": "Nessuna specie disponibile nel compendio.",
-    "SpeciesMissing": "Dati della specie non disponibili."
+    "SpeciesMissing": "Dati della specie non disponibili.",
+    "HoverPrompt": "Passa sopra un Pokémon",
+    "ByNumber": "Per numero",
+    "CatalogCaught": "Catturati",
+    "CatalogSeen": "Visti"
   }
 }

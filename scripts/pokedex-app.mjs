@@ -303,55 +303,110 @@ async function _renderCatalog(trainer) {
   const totalCaught = caughtSet.size;
   const total = list.length;
 
-  const cardsHTML = list.map((entry, idx) => {
+  const listHTML = list.map((entry) => {
     const seen = seenSet.has(entry.key);
     const caught = caughtSet.has(entry.key);
     const locked = !seen && !caught;
-    const primaryColor = getTypeColor(entry.primary);
-    const delay = Math.min(idx * 12, 900);
     const numLabel = entry.pokedexNumber
-      ? `#${String(entry.pokedexNumber).padStart(3, "0")}`
-      : "";
+      ? `No. ${String(entry.pokedexNumber).padStart(3, "0")}`
+      : "No. ???";
+    const displayName = locked ? "?????" : entry.name;
+    const portraitSrc = entry.img || "icons/svg/mystery-man.svg";
+    const classes = [
+      "catalog-list-item",
+      locked ? "locked" : "",
+      caught ? "caught" : "",
+      seen && !caught ? "seen" : ""
+    ].filter(Boolean).join(" ");
 
     return `
       <button type="button"
-              class="pokedex-card ${locked ? "locked" : ""} ${caught ? "caught" : ""}"
+              class="${classes}"
               data-action="open-species"
               data-species-key="${escapeHTML(entry.key)}"
+              data-preview-img="${escapeHTML(portraitSrc)}"
+              data-preview-name="${escapeHTML(entry.name)}"
+              data-preview-locked="${locked ? "1" : "0"}"
               ${locked ? "aria-disabled='true'" : ""}
-              style="--card-color: ${primaryColor}; --delay: ${delay}ms;"
               title="${locked ? loc("POKEDEX.LockedEntry") : escapeHTML(entry.name)}">
-        ${numLabel ? `<span class="pokedex-card-num">${numLabel}</span>` : ""}
-        <div class="pokedex-card-portrait">
-          <img src="${entry.img || "icons/svg/mystery-man.svg"}"
-               alt="${escapeHTML(entry.name)}"
-               class="${locked ? "silhouette" : ""}"
-               draggable="false" />
-          ${caught ? `<span class="pokedex-card-badge" title="${loc("POKEDEX.CaughtBadge")}"><i class="fa-solid fa-circle-check"></i></span>` : ""}
-        </div>
-        <div class="pokedex-card-name">${locked ? "???" : escapeHTML(entry.name)}</div>
+        <img class="catalog-list-portrait ${locked ? "silhouette" : ""}"
+             src="${portraitSrc}"
+             alt="${escapeHTML(entry.name)}"
+             draggable="false" />
+        <span class="catalog-list-num">${numLabel}</span>
+        <span class="catalog-list-name">${escapeHTML(displayName)}</span>
+        <span class="catalog-list-indicator" aria-hidden="true"></span>
       </button>`;
   }).join("");
 
+  const primaryColor = getTypeColor("normal");
+
+  const leftShell = `
+    <div class="pokedex-shell pokedex-shell-left">
+      <div class="pokedex-top-bar">
+        <span class="pokedex-big-light"></span>
+        <span class="pokedex-small-light pl-red"></span>
+        <span class="pokedex-small-light pl-yellow"></span>
+        <span class="pokedex-small-light pl-green"></span>
+      </div>
+      <div class="pokedex-screen">
+        <div class="pokedex-screen-frame">
+          <div class="pokedex-screen-inner">
+            <div class="pokedex-portrait-bg"></div>
+            <img class="pokedex-portrait catalog-preview-portrait"
+                 src="icons/svg/mystery-man.svg"
+                 alt=""
+                 draggable="false"
+                 data-catalog-preview-img />
+            <div class="pokedex-scanline"></div>
+          </div>
+        </div>
+        <div class="pokedex-screen-caption">
+          <div class="pokedex-name" data-catalog-preview-name>${loc("POKEDEX.HoverPrompt")}</div>
+        </div>
+      </div>
+      <div class="pokedex-speaker">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </div>`;
+
+  const rightShell = `
+    <div class="pokedex-shell pokedex-shell-right catalog-right-shell">
+      <div class="pokedex-info-screen catalog-info-screen">
+        <div class="catalog-header-bar">
+          <div class="catalog-header-title">
+            <span class="catalog-pokeball-ico"></span>
+            <span>${loc("POKEDEX.CatalogTitle")}</span>
+          </div>
+          <div class="catalog-header-stats">
+            <span class="catalog-stat caught" title="${loc("POKEDEX.CatalogCaught")}">
+              <span class="catalog-dot-caught"></span> ${totalCaught}
+            </span>
+            <span class="catalog-stat seen" title="${loc("POKEDEX.CatalogSeen")}">
+              <span class="catalog-dot-seen"></span> ${totalSeen}
+            </span>
+          </div>
+        </div>
+        <div class="catalog-sort-bar">
+          <span>${loc("POKEDEX.ByNumber")}</span>
+          <span class="catalog-sort-count">${total}</span>
+        </div>
+        <div class="catalog-list">
+          ${listHTML || `<div class="catalog-empty">${loc("POKEDEX.EmptyCatalog")}</div>`}
+        </div>
+      </div>
+      <div class="pokedex-buttons-row">
+        <button type="button" class="pokedex-btn pokedex-btn-red" data-action="close" title="${loc("POKEDEX.Close")}"></button>
+        <button type="button" class="pokedex-btn pokedex-btn-blue" data-action="close"></button>
+      </div>
+    </div>`;
+
   return `
-    <div class="pokedex-device catalog-mode" role="dialog" aria-label="Pokédex Catalog">
-      <div class="pokedex-catalog-header">
-        <div class="pokedex-catalog-title">
-          <i class="fa-solid fa-book-atlas"></i>
-          <span>${loc("POKEDEX.CatalogTitle")}</span>
-        </div>
-        <div class="pokedex-catalog-stats">
-          <span class="stat seen"><i class="fa-solid fa-eye"></i> ${totalSeen}</span>
-          <span class="stat caught"><i class="fa-solid fa-circle-check"></i> ${totalCaught}</span>
-          <span class="stat total"><i class="fa-solid fa-hashtag"></i> ${total}</span>
-        </div>
-        <button type="button" class="pokedex-catalog-close" data-action="close" title="${loc("POKEDEX.Close")}">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-      <div class="pokedex-catalog-grid">
-        ${cardsHTML || `<div class="pokedex-empty">${loc("POKEDEX.EmptyCatalog")}</div>`}
-      </div>
+    <div class="pokedex-device catalog-mode" role="dialog" aria-label="Pokédex Catalog"
+         style="--primary-color: ${primaryColor}; --secondary-color: ${primaryColor};">
+      ${leftShell}
+      <div class="pokedex-hinge"></div>
+      ${rightShell}
     </div>`;
 }
 
@@ -364,6 +419,28 @@ function _attachHandlers() {
   overlay.querySelectorAll("[data-action]").forEach((el) => {
     el.addEventListener("click", _onAction);
   });
+  overlay.querySelectorAll(".catalog-list-item").forEach((el) => {
+    el.addEventListener("mouseenter", _onCatalogPreview);
+    el.addEventListener("focus", _onCatalogPreview);
+  });
+}
+
+function _onCatalogPreview(ev) {
+  if (!overlay) return;
+  const el = ev.currentTarget;
+  const img = el.dataset.previewImg || "icons/svg/mystery-man.svg";
+  const name = el.dataset.previewName || "";
+  const locked = el.dataset.previewLocked === "1";
+  const previewImg = overlay.querySelector("[data-catalog-preview-img]");
+  const previewName = overlay.querySelector("[data-catalog-preview-name]");
+  if (previewImg) {
+    previewImg.src = img;
+    previewImg.classList.toggle("silhouette", locked);
+    previewImg.alt = locked ? "???" : name;
+  }
+  if (previewName) {
+    previewName.textContent = locked ? "???" : name;
+  }
 }
 
 async function _onAction(ev) {

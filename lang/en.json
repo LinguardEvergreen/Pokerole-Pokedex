@@ -12,6 +12,10 @@
     "LockedEntry": "Locked — scan this Pokémon first",
     "CaughtBadge": "Caught",
     "EmptyCatalog": "No species available in the compendium.",
-    "SpeciesMissing": "Species data is unavailable."
+    "SpeciesMissing": "Species data is unavailable.",
+    "HoverPrompt": "Hover a Pokémon",
+    "ByNumber": "By Number",
+    "CatalogCaught": "Caught",
+    "CatalogSeen": "Seen"
   }
 }
