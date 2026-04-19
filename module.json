@@ -2,7 +2,7 @@
   "id": "pokerole-pokedex",
   "title": "Poké Role - Pokédex",
   "description": "Adds an animated Pokédex button to the left scene controls column. Click to inspect the targeted Pokémon: species portrait, type(s) and pokédex entry/biography.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "compatibility": {
     "minimum": "13",
     "verified": "13.351"

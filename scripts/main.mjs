@@ -71,12 +71,31 @@ function getTargetedPokemonActor() {
 /**
  * Build the data payload used by the Pokédex template.
  */
+/**
+ * Clean up a Pok-Role Pokémon biography for pokédex display:
+ *   - Strips the "Corebook Pokedex import #NNN." prefix
+ *   - Strips the trailing "Abilities: ..." / "Abilità: ..." section
+ *   - Inserts a paragraph break after "Category: ... Pokémon."
+ */
+function cleanBiography(text) {
+  let entry = String(text ?? "").trim();
+  if (!entry) return "";
+  // Strip leading "Corebook ... ." (covers "Corebook Pokedex import #025.")
+  entry = entry.replace(/^\s*Corebook[^.]*\.\s*/i, "");
+  // Strip trailing "Abilities: ..." or Italian "Abilità: ..." to end of string
+  entry = entry.replace(/\s*(Abilities|Abilit[àa])\s*:.*$/is, "");
+  // Add paragraph break after the Category line (English or Italian)
+  entry = entry.replace(/((?:Category|Categoria)\s*:\s*[^.]+\.)\s+/i, "$1\n\n");
+  return entry.trim();
+}
+
 function buildPokedexData(actor) {
   const sys = actor.system ?? {};
   const primary = sys.types?.primary ?? "normal";
   const secondary = sys.types?.secondary ?? "none";
 
-  const entry = sys.biography?.trim?.() || loc("POKEDEX.NoEntry");
+  const rawEntry = cleanBiography(sys.biography);
+  const entry = rawEntry || loc("POKEDEX.NoEntry");
 
   const types = [{
     key: primary,
@@ -106,55 +125,34 @@ function buildPokedexData(actor) {
 }
 
 /* ---------------------------------------- */
-/*  Scene Control Button Injection          */
+/*  Scene Control Tool Registration         */
 /* ---------------------------------------- */
 
-function injectPokedexButton() {
-  const column = document.getElementById("ui-left-column-1");
-  if (!column) return;
-  if (column.querySelector(".pokerole-pokedex-btn")) return;
+// Register the Pokédex as a tool inside the Tokens control group so it sits
+// alongside the system's "Set Weather" tool. Order is computed relative to
+// the weather tool so we always end up right below it.
+Hooks.on("getSceneControlButtons", (controls) => {
+  const tokens = controls?.tokens;
+  if (!tokens?.tools) return;
 
-  // Locate the Token controls button (fa-user-large) inside the column.
-  const tokenBtn = column.querySelector(
-    "[data-control='tokens'], button.fa-user-large, li.fa-user-large, .control.fa-user-large"
-  );
-  const host = tokenBtn?.parentElement ?? column.querySelector("menu, ol, ul, nav, .scene-controls") ?? column;
+  const weatherTool = tokens.tools["pokrole-set-weather"];
+  const weatherOrder = Number.isFinite(weatherTool?.order) ? weatherTool.order : null;
+  const nextOrder = weatherOrder !== null
+    ? weatherOrder + 0.5
+    : Object.keys(tokens.tools).length;
 
-  const tag = tokenBtn?.tagName?.toLowerCase() === "li" ? "li" : "button";
-  const btn = document.createElement(tag);
-  if (tag === "button") btn.type = "button";
-  btn.className = "control ui-control layer icon fa-solid fa-book-atlas pokerole-pokedex-btn";
-  btn.dataset.tool = `${MODULE_ID}-open`;
-  btn.dataset.tooltip = loc("POKEDEX.ButtonTooltip");
-  btn.setAttribute("aria-label", loc("POKEDEX.ButtonTooltip"));
-
-  // Use pointerdown + click; stopPropagation/stopImmediatePropagation keep
-  // ApplicationV2's delegated action handler from complaining about an
-  // unregistered action.
-  const handler = (ev) => {
-    ev.preventDefault();
-    ev.stopPropagation();
-    if (typeof ev.stopImmediatePropagation === "function") ev.stopImmediatePropagation();
-    if (ev.type === "click") openPokedex();
+  tokens.tools[`${MODULE_ID}-open`] = {
+    name: `${MODULE_ID}-open`,
+    title: "POKEDEX.ButtonTooltip",
+    icon: "fa-solid fa-book-atlas",
+    order: nextOrder,
+    button: true,
+    visible: true,
+    onChange: () => openPokedex()
   };
-  btn.addEventListener("pointerdown", handler);
-  btn.addEventListener("click", handler);
-
-  if (tokenBtn && tokenBtn.parentElement === host) {
-    tokenBtn.after(btn);
-  } else {
-    host.prepend(btn);
-  }
-}
-
-// v13 renders scene controls multiple times; re-inject on every render.
-Hooks.on("renderSceneControls", () => {
-  // Delay slightly so the DOM is fully settled after ApplicationV2 render
-  requestAnimationFrame(injectPokedexButton);
 });
 
 Hooks.once("ready", () => {
-  injectPokedexButton();
   console.log(`${MODULE_ID} | ready`);
 });
 
