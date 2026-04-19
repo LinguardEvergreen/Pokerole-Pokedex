@@ -19,7 +19,12 @@ import {
   isSeen,
   markSeen
 } from "./state.mjs";
-import { getSpeciesActorByKey, getSpeciesIndex } from "./species.mjs";
+import {
+  getSpeciesActorById,
+  getSpeciesActorByKey,
+  getSpeciesIndex,
+  getVariantsForActor
+} from "./species.mjs";
 
 /* ============================================================
  *  State + lifecycle
@@ -35,7 +40,9 @@ let escHandler = null;
  *   mode: "single-entry" | "single-moves" | "catalog",
  *   actor: Actor | null,         // for single modes
  *   trainer: Actor | null,
- *   fromCatalog: boolean         // single mode opened from catalog
+ *   fromCatalog: boolean,        // single mode opened from catalog
+ *   variants: Array | null,      // all forms sharing this pokédex number
+ *   variantIndex: number         // which variant `actor` corresponds to
  * }
  */
 
@@ -83,7 +90,9 @@ export async function openSinglePokedex(actor, { markSeenOnOpen = false } = {}) 
     mode: "single-entry",
     actor,
     trainer,
-    fromCatalog: false
+    fromCatalog: false,
+    variants: null,
+    variantIndex: 0
   };
   ensureOverlay();
   await _render();
@@ -95,7 +104,9 @@ export async function openCatalogPokedex(trainer) {
     mode: "catalog",
     trainer: resolvedTrainer,
     actor: null,
-    fromCatalog: false
+    fromCatalog: false,
+    variants: null,
+    variantIndex: 0
   };
   ensureOverlay();
   await _render();
@@ -122,6 +133,28 @@ function _nav(direction) {
 
 async function _render() {
   if (!overlay || !state) return;
+  // Single-mode: make sure we know about any alternate forms so the form
+  // cycler can appear. If the pokédex was opened from a targeted token
+  // (not from the catalog), we haven't populated variants yet.
+  if ((state.mode === "single-entry" || state.mode === "single-moves")
+      && state.actor
+      && state.variants == null) {
+    try {
+      const variants = await getVariantsForActor(state.actor);
+      if (variants.length > 0) {
+        const idx = variants.findIndex((v) => v.id === state.actor.id);
+        state.variants = variants;
+        state.variantIndex = idx >= 0 ? idx : 0;
+      } else {
+        state.variants = [];
+        state.variantIndex = 0;
+      }
+    } catch (err) {
+      console.warn(MODULE_ID, "variant lookup failed", err);
+      state.variants = [];
+      state.variantIndex = 0;
+    }
+  }
   let html = "";
   if (state.mode === "single-entry") {
     html = _renderSingle(state.actor, "entry");
@@ -261,9 +294,33 @@ function _renderSingle(actor, page) {
   const leftArrowEnabled = (page === "moves") || state?.fromCatalog;
   const rightArrowEnabled = (page === "entry");
 
+  const hasForms = Array.isArray(state?.variants) && state.variants.length > 1;
+  const formSwitcherHTML = hasForms ? `
+    <div class="pokedex-form-switcher" role="group" aria-label="${loc("POKEDEX.FormSwitcher")}">
+      <button type="button"
+              class="pokedex-form-arrow"
+              data-action="form-prev"
+              title="${loc("POKEDEX.PrevForm")}">
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+      <span class="pokedex-form-label">
+        ${escapeHTML(loc("POKEDEX.FormOf", {
+          current: String((state.variantIndex ?? 0) + 1),
+          total: String(state.variants.length)
+        }))}
+      </span>
+      <button type="button"
+              class="pokedex-form-arrow"
+              data-action="form-next"
+              title="${loc("POKEDEX.NextForm")}">
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+    </div>` : "";
+
   const rightHTML = `
-    <div class="pokedex-shell pokedex-shell-right">
+    <div class="pokedex-shell pokedex-shell-right${hasForms ? " has-forms" : ""}">
       <div class="pokedex-info-screen">
+        ${formSwitcherHTML}
         ${rightBody}
       </div>
       ${pageDots}
@@ -456,7 +513,16 @@ async function _onAction(ev) {
   } else if (action === "open-species") {
     const key = ev.currentTarget.dataset.speciesKey;
     if (ev.currentTarget.classList.contains("locked")) return;
-    const actor = await getSpeciesActorByKey(key);
+    // Use the canonical catalog entry for this species so we can carry its
+    // full variants list into the single view (base form + Mega + regional
+    // forms etc., enabling the form cycler on the right shell).
+    const list = await getSpeciesIndex();
+    const catalogEntry = list.find((e) => e.key === key);
+    const variants = catalogEntry?.variants ?? [];
+    const firstVariant = variants[0];
+    const actor = firstVariant
+      ? await getSpeciesActorById(firstVariant.id)
+      : await getSpeciesActorByKey(key);
     if (!actor) {
       ui.notifications.warn(loc("POKEDEX.SpeciesMissing"));
       return;
@@ -465,8 +531,25 @@ async function _onAction(ev) {
       mode: "single-entry",
       actor,
       trainer: state?.trainer ?? getCurrentUserTrainer(),
-      fromCatalog: true
+      fromCatalog: true,
+      variants,
+      variantIndex: 0
     };
+    _render();
+  } else if (action === "form-prev" || action === "form-next") {
+    if (!state?.variants || state.variants.length < 2) return;
+    const n = state.variants.length;
+    const delta = action === "form-next" ? 1 : -1;
+    const next = (((state.variantIndex ?? 0) + delta) % n + n) % n;
+    const variant = state.variants[next];
+    if (!variant) return;
+    const actor = await getSpeciesActorById(variant.id);
+    if (!actor) {
+      ui.notifications.warn(loc("POKEDEX.SpeciesMissing"));
+      return;
+    }
+    state.actor = actor;
+    state.variantIndex = next;
     _render();
   }
 }

@@ -16,6 +16,10 @@
     "HoverPrompt": "Hover a Pokémon",
     "ByNumber": "By Number",
     "CatalogCaught": "Caught",
-    "CatalogSeen": "Seen"
+    "CatalogSeen": "Seen",
+    "FormSwitcher": "Alternate forms",
+    "PrevForm": "Previous form",
+    "NextForm": "Next form",
+    "FormOf": "Form {current}/{total}"
   }
 }

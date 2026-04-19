@@ -16,6 +16,10 @@
     "HoverPrompt": "Passa sopra un Pokémon",
     "ByNumber": "Per numero",
     "CatalogCaught": "Catturati",
-    "CatalogSeen": "Visti"
+    "CatalogSeen": "Visti",
+    "FormSwitcher": "Forme alternative",
+    "PrevForm": "Forma precedente",
+    "NextForm": "Forma successiva",
+    "FormOf": "Forma {current}/{total}"
   }
 }

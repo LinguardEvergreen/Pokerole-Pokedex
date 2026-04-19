@@ -360,6 +360,77 @@
   flex-direction: column;
   gap: 10px;
   overflow: hidden;
+  position: relative;
+}
+
+/* Form cycler (only shown when a species has alternate forms). Lives in
+   the top-right corner of the info screen so it doesn't fight with the
+   title or types row. */
+.pokedex-form-switcher {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #2a2a2a, #0d0d0d);
+  color: #ffd268;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  z-index: 2;
+  animation: pokedex-form-pop 0.35s 0.25s cubic-bezier(.18, .89, .32, 1.28) both;
+}
+
+@keyframes pokedex-form-pop {
+  from { opacity: 0; transform: scale(0.6); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.pokedex-form-arrow {
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #ff7f7f, #b42020 70%);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.35),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.4),
+    0 2px 3px rgba(0, 0, 0, 0.4);
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.pokedex-form-arrow:hover {
+  transform: translateY(-1px) scale(1.05);
+  filter: brightness(1.1);
+}
+
+.pokedex-form-arrow:active {
+  transform: translateY(1px);
+}
+
+.pokedex-form-label {
+  padding: 0 6px;
+  min-width: 44px;
+  text-align: center;
+  font-family: "Courier New", ui-monospace, monospace;
+}
+
+/* When the form switcher is present, pad the header so the absolute-
+   positioned pill doesn't overlap the title. */
+.pokedex-shell-right.has-forms .pokedex-info-header {
+  padding-right: 120px;
 }
 
 .pokedex-info-header {
@@ -613,16 +684,21 @@
  *  Catalog Mode — right-shell list in Pokémon Sword/Shield style
  * ============================================================ */
 
-/* Cap the whole device so a ~1000-row list can't stretch the clamshell
-   past the viewport. Flex children also need `min-height: 0` along the
-   chain, otherwise their intrinsic min-size (auto → min-content) beats
-   the device's max-height and the list pushes everything tall again. */
+/* Pin the whole catalog device to the same height as the single-view
+   clamshell so the left shell (portrait) visually matches when the user
+   switches between the two. With `align-items: stretch` both shells
+   inherit this height, and the list inside the right shell scrolls.
+   Flex children also need `min-height: 0` along the chain, otherwise the
+   intrinsic min-size (auto → min-content) would let a 1000-row list
+   balloon everything past this cap. */
 .pokedex-device.catalog-mode {
-  max-height: 88vh;
+  height: 620px;
+  max-height: 92vh;
 }
 
 .pokedex-device.catalog-mode .pokedex-shell {
   min-height: 0;
+  height: 100%;
 }
 
 /* Right shell is wider in catalog mode so the list rows breathe */
