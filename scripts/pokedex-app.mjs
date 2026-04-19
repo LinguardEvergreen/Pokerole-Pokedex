@@ -98,6 +98,21 @@ export async function openSinglePokedex(actor, { markSeenOnOpen = false } = {}) 
   await _render();
 }
 
+/**
+ * Re-render the Pokédex overlay if it is currently displaying data for the
+ * given trainer. Called when the trainer's seen/caught flags change so the
+ * catalog (or a single-entry view opened from it) updates immediately
+ * instead of showing a stale snapshot until the window is reopened.
+ */
+export function refreshPokedexIfOpen(trainer) {
+  if (!overlay || !state) return;
+  if (!trainer?.id) return;
+  if (state.trainer?.id !== trainer.id) return;
+  // Reuse the current state verbatim; _render() reads the latest flag values
+  // via getSeenList/getCaughtList each time.
+  _render();
+}
+
 export async function openCatalogPokedex(trainer) {
   const resolvedTrainer = trainer ?? getCurrentUserTrainer();
   state = {

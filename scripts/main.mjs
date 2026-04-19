@@ -8,7 +8,8 @@ import { MODULE_ID, loc } from "./constants.mjs";
 import {
   closePokedex,
   openCatalogPokedex,
-  openSinglePokedex
+  openSinglePokedex,
+  refreshPokedexIfOpen
 } from "./pokedex-app.mjs";
 import { isPrimaryOwner, markCaught } from "./state.mjs";
 
@@ -59,29 +60,61 @@ Hooks.on("getSceneControlButtons", (controls) => {
 });
 
 /* ---------------------------------------- */
-/*  Capture auto-open + caught tracking     */
+/*  Capture + evolution + catalog refresh   */
 /* ---------------------------------------- */
 
 Hooks.on("updateActor", async (actor, changes, _options, _userId) => {
-  if (actor?.type !== "pokemon") return;
-  const newCaughtBy = foundry.utils.getProperty(changes, "system.caughtBy");
-  if (!newCaughtBy) return;
-
-  const trainer = game.actors?.get(newCaughtBy);
-  if (!trainer || trainer.type !== "trainer") return;
-
-  // Single writer does the flag write to avoid races across clients.
-  if (isPrimaryOwner(trainer)) {
-    try {
-      await markCaught(trainer, actor);
-    } catch (err) {
-      console.error(`${MODULE_ID} | markCaught failed:`, err);
+  // ── Pokémon updates ──────────────────────────────────────────
+  if (actor?.type === "pokemon") {
+    // Evolution: the pok-role evolve() pipeline writes the new
+    // `system.species` (and name, stats, items, etc.) on the existing actor
+    // in a single update. Treat that like a capture for the trainer that
+    // owns this Pokémon so the new species appears in their Pokédex.
+    const newSpecies = foundry.utils.getProperty(changes, "system.species");
+    if (newSpecies) {
+      const caughtById = actor.system?.caughtBy ?? "";
+      if (caughtById) {
+        const evolver = game.actors?.get(caughtById);
+        if (evolver && evolver.type === "trainer" && isPrimaryOwner(evolver)) {
+          try {
+            await markCaught(evolver, actor);
+          } catch (err) {
+            console.error(`${MODULE_ID} | evolution markCaught failed:`, err);
+          }
+        }
+      }
     }
+
+    // Initial capture: caughtBy was set for the first time.
+    const newCaughtBy = foundry.utils.getProperty(changes, "system.caughtBy");
+    if (newCaughtBy) {
+      const trainer = game.actors?.get(newCaughtBy);
+      if (trainer && trainer.type === "trainer") {
+        if (isPrimaryOwner(trainer)) {
+          try {
+            await markCaught(trainer, actor);
+          } catch (err) {
+            console.error(`${MODULE_ID} | markCaught failed:`, err);
+          }
+        }
+        if (trainer.testUserPermission?.(game.user, "OWNER")) {
+          openSinglePokedex(actor, { markSeenOnOpen: false });
+        }
+      }
+    }
+    return;
   }
 
-  // Any user who owns the trainer sees the Pokédex pop up.
-  if (trainer.testUserPermission?.(game.user, "OWNER")) {
-    openSinglePokedex(actor, { markSeenOnOpen: false });
+  // ── Trainer updates: refresh an open Pokédex ─────────────────
+  // When the seen/caught flag arrays change (capture, evolution, manual
+  // tweak), any client currently viewing the Pokédex for this trainer
+  // should re-render so counters/silhouettes reflect the new state.
+  if (actor?.type === "trainer") {
+    const caughtChanged = foundry.utils.hasProperty(changes, `flags.${MODULE_ID}.caught`);
+    const seenChanged = foundry.utils.hasProperty(changes, `flags.${MODULE_ID}.seen`);
+    if (caughtChanged || seenChanged) {
+      refreshPokedexIfOpen(actor);
+    }
   }
 });
 
