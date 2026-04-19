@@ -801,6 +801,28 @@
   text-shadow: 0 1px 2px rgba(0,0,0,0.6);
 }
 
+.pokedex-card-num {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-family: "Courier New", ui-monospace, monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(0, 0, 0, 0.55);
+  padding: 1px 5px;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
+  text-shadow: 0 1px 1px rgba(0,0,0,0.6);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.pokedex-card.locked .pokedex-card-num {
+  color: rgba(255, 255, 255, 0.55);
+}
+
 @keyframes pokedex-card-in {
   from { opacity: 0; transform: translateY(12px) scale(0.9); }
   to   { opacity: 1; transform: translateY(0) scale(1); }

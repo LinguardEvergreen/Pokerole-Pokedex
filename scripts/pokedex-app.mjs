@@ -309,6 +309,9 @@ async function _renderCatalog(trainer) {
     const locked = !seen && !caught;
     const primaryColor = getTypeColor(entry.primary);
     const delay = Math.min(idx * 12, 900);
+    const numLabel = entry.pokedexNumber
+      ? `#${String(entry.pokedexNumber).padStart(3, "0")}`
+      : "";
 
     return `
       <button type="button"
@@ -318,6 +321,7 @@ async function _renderCatalog(trainer) {
               ${locked ? "aria-disabled='true'" : ""}
               style="--card-color: ${primaryColor}; --delay: ${delay}ms;"
               title="${locked ? loc("POKEDEX.LockedEntry") : escapeHTML(entry.name)}">
+        ${numLabel ? `<span class="pokedex-card-num">${numLabel}</span>` : ""}
         <div class="pokedex-card-portrait">
           <img src="${entry.img || "icons/svg/mystery-man.svg"}"
                alt="${escapeHTML(entry.name)}"
