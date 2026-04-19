@@ -14,24 +14,19 @@ export async function getSpeciesIndex() {
     _indexCache = [];
     return _indexCache;
   }
-  const index = await pack.getIndex({
-    fields: [
-      "name",
-      "img",
-      "system.species",
-      "system.types",
-      "system.types.primary",
-      "system.types.secondary"
-    ]
-  });
+  // Use only the default index fields (name, img, type). Requesting nested
+  // system.* paths triggers a server-side walk that crashes on malformed
+  // entries with "Cannot use 'in' operator". Type accents in the catalog
+  // grid fall back to a neutral color, which is fine aesthetically.
+  const index = await pack.getIndex();
   const list = Array.from(index.values()).map((e) => ({
     id: e._id,
     uuid: `Compendium.${POKEMON_PACK_ID}.${e._id}`,
     name: e.name,
     key: speciesKey(e),
     img: e.img,
-    primary: e?.system?.types?.primary ?? "normal",
-    secondary: e?.system?.types?.secondary ?? "none"
+    primary: "normal",
+    secondary: "none"
   })).sort((a, b) => a.name.localeCompare(b.name));
   _indexCache = list;
   return list;
