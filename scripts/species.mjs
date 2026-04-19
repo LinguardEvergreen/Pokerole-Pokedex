@@ -17,6 +17,34 @@ function _parsePokedexNumber(bio) {
   return m ? parseInt(m[1], 10) : null;
 }
 
+/**
+ * Heuristic: does a name look like a regional/mega/dynamax form rather than
+ * the canonical base species? Used to collapse the catalog when the compendium
+ * stores multiple entries under the same Pokédex number.
+ */
+const _FORM_MARKER_RE = /\b(mega|primal|gigantamax|g[ -]?max|dynamax|alolan?|galarian?|hisuian?|paldean?|ultra|origin|therian|white|black|sky|speed|defense|attack|shiny)\b/i;
+
+function _isBaseForm(name) {
+  if (!name) return false;
+  if (/[()]/.test(name)) return false;
+  if (_FORM_MARKER_RE.test(name)) return false;
+  return true;
+}
+
+/**
+ * Pick the better representative when two entries share a Pokédex number.
+ * Base forms win over marked forms; among peers, the shortest name wins
+ * (base forms virtually always have shorter names than their variants).
+ */
+function _pickBetter(existing, candidate) {
+  const eb = _isBaseForm(existing.name);
+  const cb = _isBaseForm(candidate.name);
+  if (cb && !eb) return candidate;
+  if (eb && !cb) return existing;
+  if (candidate.name.length < existing.name.length) return candidate;
+  return existing;
+}
+
 export async function getSpeciesIndex() {
   if (_indexCache) return _indexCache;
   const pack = game.packs?.get(POKEMON_PACK_ID);
@@ -37,7 +65,7 @@ export async function getSpeciesIndex() {
     console.warn("pokerole-pokedex: biography index fetch failed, falling back to default index", err);
     index = await pack.getIndex();
   }
-  const list = Array.from(index.values()).map((e) => {
+  const raw = Array.from(index.values()).map((e) => {
     const bio = e?.system?.biography ?? "";
     return {
       id: e._id,
@@ -49,12 +77,26 @@ export async function getSpeciesIndex() {
       primary: "normal",
       secondary: "none"
     };
-  }).sort((a, b) => {
-    const ax = a.pokedexNumber ?? Number.POSITIVE_INFINITY;
-    const bx = b.pokedexNumber ?? Number.POSITIVE_INFINITY;
-    if (ax !== bx) return ax - bx;
-    return a.name.localeCompare(b.name);
   });
+
+  // Collapse alternate forms (Mega, regional variants, Gigantamax, etc.)
+  // that share the same National Dex number into a single catalog slot,
+  // preferring the entry that looks like the base form.
+  const byNumber = new Map();
+  const unnumbered = [];
+  for (const entry of raw) {
+    if (entry.pokedexNumber == null) {
+      unnumbered.push(entry);
+      continue;
+    }
+    const existing = byNumber.get(entry.pokedexNumber);
+    byNumber.set(entry.pokedexNumber, existing ? _pickBetter(existing, entry) : entry);
+  }
+  unnumbered.sort((a, b) => a.name.localeCompare(b.name));
+  const list = [
+    ...Array.from(byNumber.values()).sort((a, b) => a.pokedexNumber - b.pokedexNumber),
+    ...unnumbered
+  ];
   _indexCache = list;
   return list;
 }
