@@ -4,6 +4,14 @@
     "NoTarget": "Bersaglia prima un Pokémon (premi T su un token) per aprire il Pokédex.",
     "EntryLabel": "Voce del Pokédex",
     "NoEntry": "Nessuna voce del pokédex registrata per questo Pokémon.",
-    "Close": "Chiudi"
+    "MovesLabel": "Mosse per Rank",
+    "NoMoves": "Nessuna mossa apprendibile registrata per questo Pokémon.",
+    "Close": "Chiudi",
+    "OpenCatalog": "Apri Catalogo Pokédex (tutte le specie)",
+    "CatalogTitle": "Catalogo Pokédex",
+    "LockedEntry": "Bloccato — scansiona prima questo Pokémon",
+    "CaughtBadge": "Catturato",
+    "EmptyCatalog": "Nessuna specie disponibile nel compendio.",
+    "SpeciesMissing": "Dati della specie non disponibili."
   }
 }
