@@ -134,6 +134,9 @@ export async function openCatalogPokedex(trainer) {
 function _nav(direction) {
   if (!state) return;
   if (state.mode === "single-entry" && direction === "right") {
+    // Moves page is gated behind capture — silently no-op when locked so
+    // keyboard ArrowRight can't bypass the disabled UI button.
+    if (!_canViewMoves(state.actor)) return;
     state.mode = "single-moves";
     _render();
   } else if (state.mode === "single-moves" && direction === "left") {
@@ -256,8 +259,22 @@ function _buildSingleData(actor) {
   };
 }
 
+function _canViewMoves(actor) {
+  // Moves page requires capture. Bypass the gate when there is no trainer
+  // context (e.g. GM inspecting a scene without a personal trainer actor)
+  // since there's nobody to "catch" it against.
+  if (game.user?.isGM) return true;
+  if (!state?.trainer) return true;
+  return isCaught(state.trainer, speciesKey(actor));
+}
+
 function _renderSingle(actor, page) {
   const data = _buildSingleData(actor);
+  const canViewMoves = _canViewMoves(actor);
+  // If we somehow landed on the moves page for an un-caught species (e.g.
+  // the caught flag was revoked while the overlay was open) fall back to the
+  // entry page so the player can't read the learnset.
+  if (page === "moves" && !canViewMoves) page = "entry";
   const typesHTML = data.types.map((t) => `
     <span class="pokedex-type-chip" style="--type-color: ${t.color};">
       <img src="${t.icon}" alt="${escapeHTML(t.label)}" draggable="false" />
@@ -322,11 +339,14 @@ function _renderSingle(actor, page) {
   const pageDots = `
     <div class="pokedex-page-dots">
       <span class="${page === "entry" ? "active" : ""}"></span>
-      <span class="${page === "moves" ? "active" : ""}"></span>
+      ${canViewMoves ? `<span class="${page === "moves" ? "active" : ""}"></span>` : ""}
     </div>`;
 
   const leftArrowEnabled = (page === "moves") || state?.fromCatalog;
-  const rightArrowEnabled = (page === "entry");
+  const rightArrowEnabled = (page === "entry") && canViewMoves;
+  const rightArrowTitle = (page === "entry" && !canViewMoves)
+    ? loc("POKEDEX.MovesLocked")
+    : "";
 
   const hasForms = Array.isArray(state?.variants) && state.variants.length > 1;
   const formSwitcherHTML = hasForms ? `
@@ -366,7 +386,11 @@ function _renderSingle(actor, page) {
           <div class="pokedex-dpad-v"></div>
           <div class="pokedex-dpad-h"></div>
         </div>
-        <button type="button" class="pokedex-nav-btn ${rightArrowEnabled ? "" : "disabled"}" data-action="nav-right" ${rightArrowEnabled ? "" : "disabled"}>
+        <button type="button"
+                class="pokedex-nav-btn ${rightArrowEnabled ? "" : "disabled"}"
+                data-action="nav-right"
+                ${rightArrowEnabled ? "" : "disabled"}
+                ${rightArrowTitle ? `title="${escapeHTML(rightArrowTitle)}"` : ""}>
           <i class="fa-solid fa-chevron-right"></i>
         </button>
       </div>

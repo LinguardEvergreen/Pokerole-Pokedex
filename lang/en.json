@@ -5,6 +5,7 @@
     "EntryLabel": "Pokédex Entry",
     "NoEntry": "No pokédex entry recorded for this Pokémon.",
     "MovesLabel": "Learnset by Rank",
+    "MovesLocked": "Catch this Pokémon to unlock its moves",
     "NoMoves": "No learnable moves recorded for this Pokémon.",
     "Close": "Close",
     "OpenCatalog": "Open Pokédex Catalog (all species)",

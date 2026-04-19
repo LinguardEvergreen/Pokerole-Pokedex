@@ -5,6 +5,7 @@
     "EntryLabel": "Voce del Pokédex",
     "NoEntry": "Nessuna voce del pokédex registrata per questo Pokémon.",
     "MovesLabel": "Mosse per Rank",
+    "MovesLocked": "Cattura questo Pokémon per sbloccare le sue mosse",
     "NoMoves": "Nessuna mossa apprendibile registrata per questo Pokémon.",
     "Close": "Chiudi",
     "OpenCatalog": "Apri Catalogo Pokédex (tutte le specie)",
