@@ -139,7 +139,31 @@
     inset 0 0 0 2px rgba(0, 0, 0, 0.25),
     inset 0 6px 12px rgba(255, 255, 255, 0.25),
     inset 0 -8px 14px rgba(0, 0, 0, 0.35);
-  animation: pokedex-catalog-open 0.7s cubic-bezier(.18,.89,.32,1.28) both;
+  position: relative;
+  transform-origin: center center;
+  animation: pokedex-catalog-open 0.85s cubic-bezier(.18,.89,.32,1.28) both;
+}
+
+/* Clamshell lid on top of the catalog that flips upward to reveal the grid */
+.pokedex-device.catalog-mode::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 44%, #ffffff 0 16px, rgba(0,0,0,0.7) 17px 20px, transparent 21px),
+    radial-gradient(circle at 50% 44%, rgba(0,0,0,0.18) 0 70px, transparent 72px),
+    linear-gradient(145deg, var(--device-red-light), var(--device-red) 45%, var(--device-red-dark));
+  border-radius: 22px;
+  box-shadow:
+    inset 0 0 0 2px rgba(0, 0, 0, 0.35),
+    inset 0 6px 12px rgba(255, 255, 255, 0.25),
+    inset 0 -10px 16px rgba(0, 0, 0, 0.55),
+    0 10px 22px rgba(0, 0, 0, 0.55);
+  transform-origin: top center;
+  backface-visibility: hidden;
+  pointer-events: none;
+  z-index: 5;
+  animation: pokedex-lid-open 1.05s 0.35s cubic-bezier(.22,.85,.35,1.1) both;
 }
 
 @keyframes pokedex-open {
@@ -149,8 +173,16 @@
 }
 
 @keyframes pokedex-catalog-open {
-  0%   { transform: scale(0.55); opacity: 0; }
+  0%   { transform: scale(0.4); opacity: 0; }
+  55%  { transform: scale(1.04); opacity: 1; }
+  80%  { transform: scale(0.98); }
   100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pokedex-lid-open {
+  0%   { transform: perspective(2200px) rotateX(0deg); opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: perspective(2200px) rotateX(-118deg); opacity: 0; }
 }
 
 @keyframes pokedex-close {
