@@ -112,7 +112,8 @@ Hooks.on("updateActor", async (actor, changes, _options, _userId) => {
   if (actor?.type === "trainer") {
     const caughtChanged = foundry.utils.hasProperty(changes, `flags.${MODULE_ID}.caught`);
     const seenChanged = foundry.utils.hasProperty(changes, `flags.${MODULE_ID}.seen`);
-    if (caughtChanged || seenChanged) {
+    const formsChanged = foundry.utils.hasProperty(changes, `flags.${MODULE_ID}.forms`);
+    if (caughtChanged || seenChanged || formsChanged) {
       refreshPokedexIfOpen(actor);
     }
   }

@@ -13,6 +13,7 @@ import {
 import {
   getCaughtList,
   getCurrentUserTrainer,
+  getFormsList,
   getSeenList,
   isCaught,
   isPrimaryOwner,
@@ -108,8 +109,11 @@ export function refreshPokedexIfOpen(trainer) {
   if (!overlay || !state) return;
   if (!trainer?.id) return;
   if (state.trainer?.id !== trainer.id) return;
-  // Reuse the current state verbatim; _render() reads the latest flag values
-  // via getSeenList/getCaughtList each time.
+  // Invalidate the cached variants list so _render re-fetches + re-filters it
+  // against the trainer's latest `forms` flag. Without this, a newly-unlocked
+  // Mega/regional form would stay hidden from the cycler until the overlay
+  // was closed and reopened.
+  if (state.variants != null) state.variants = null;
   _render();
 }
 
@@ -142,6 +146,20 @@ function _nav(direction) {
   }
 }
 
+/**
+ * Hide alternate forms the trainer hasn't unlocked yet. The base form (index 0)
+ * is always kept — it's the canonical catalog entry and the only form the
+ * player can reach without seeing it first. Mega / regional / Gmax variants
+ * only appear in the cycler once they've been marked on the trainer's forms
+ * flag (via markSeen / markCaught).
+ */
+function _filterVariantsByUnlock(variants, trainer) {
+  if (!Array.isArray(variants) || variants.length === 0) return variants ?? [];
+  if (!trainer) return [variants[0]];
+  const unlocked = new Set(getFormsList(trainer));
+  return variants.filter((v, idx) => idx === 0 || unlocked.has(v.id));
+}
+
 /* ============================================================
  *  Rendering
  * ============================================================ */
@@ -156,9 +174,10 @@ async function _render() {
       && state.variants == null) {
     try {
       const variants = await getVariantsForActor(state.actor);
-      if (variants.length > 0) {
-        const idx = variants.findIndex((v) => v.id === state.actor.id);
-        state.variants = variants;
+      const filtered = _filterVariantsByUnlock(variants, state.trainer);
+      if (filtered.length > 0) {
+        const idx = filtered.findIndex((v) => v.id === state.actor.id);
+        state.variants = filtered;
         state.variantIndex = idx >= 0 ? idx : 0;
       } else {
         state.variants = [];
@@ -533,8 +552,10 @@ async function _onAction(ev) {
     // forms etc., enabling the form cycler on the right shell).
     const list = await getSpeciesIndex();
     const catalogEntry = list.find((e) => e.key === key);
-    const variants = catalogEntry?.variants ?? [];
-    const firstVariant = variants[0];
+    const allVariants = catalogEntry?.variants ?? [];
+    const trainer = state?.trainer ?? getCurrentUserTrainer();
+    const variants = _filterVariantsByUnlock(allVariants, trainer);
+    const firstVariant = variants[0] ?? allVariants[0];
     const actor = firstVariant
       ? await getSpeciesActorById(firstVariant.id)
       : await getSpeciesActorByKey(key);
@@ -545,7 +566,7 @@ async function _onAction(ev) {
     state = {
       mode: "single-entry",
       actor,
-      trainer: state?.trainer ?? getCurrentUserTrainer(),
+      trainer,
       fromCatalog: true,
       variants,
       variantIndex: 0
