@@ -260,11 +260,10 @@ function _buildSingleData(actor) {
 }
 
 function _canViewMoves(actor) {
-  // Moves page requires capture. Bypass the gate when there is no trainer
-  // context (e.g. GM inspecting a scene without a personal trainer actor)
-  // since there's nobody to "catch" it against.
-  if (game.user?.isGM) return true;
-  if (!state?.trainer) return true;
+  // Moves page is strictly gated behind capture. No GM/no-trainer bypass:
+  // if the active trainer hasn't caught this species, the moveset stays
+  // hidden — matching the pokédex "scan first, then capture" flavour.
+  if (!state?.trainer) return false;
   return isCaught(state.trainer, speciesKey(actor));
 }
 
